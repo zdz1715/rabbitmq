@@ -1,0 +1,15 @@
+{
+    "name": "zdz/rabbitmq",
+    "require": {
+        "php-amqplib/php-amqplib": "^2.9"
+    },
+    "authors": [
+        {
+            "name": "zhudongzhuo",
+            "email": "zdzserver@163.com"
+        }
+    ],
+    "autoload": {
+        "files": ["autoload.php"]
+    }
+}
