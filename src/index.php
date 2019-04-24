@@ -8,40 +8,31 @@ use PhpAmqpLib\Wire\AMQPTable;
 
 spl_autoload_register('\Rabbitmq\Autoloader::loadByNamespace');
 
-$queue = 'msg';
-$queue1 = 'msg_1';
-$exchange = 'router';
-$exchange1 = 'router_1';
-$consumerTag = 'consumer';
-
-$connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest', '/');
+$connection = new AMQPStreamConnection('127.0.0.1', 5672, 'guest', 'guest');
 $channel = $connection->channel();
 
-
-
-$channel->exchange_declare($exchange, AMQPExchangeType::DIRECT, false, false, false);
-$channel->exchange_declare($exchange1, AMQPExchangeType::DIRECT, false, false, false);
-
+$channel->exchange_declare('delay_exchange', 'direct',false,false,false);
+$channel->exchange_declare('cache_exchange', 'direct',false,false,false);
 
 $tale = new AMQPTable();
-$tale->set('x-dead-letter-exchange', $exchange1);
+$tale->set('x-dead-letter-exchange', 'delay_exchange');
+$tale->set('x-dead-letter-routing-key','delay_exchange');
+//$tale->set('x-message-ttl',60000);
+
+$channel->queue_declare('cache_queue',false,true,false,false,false,$tale);
+$channel->queue_bind('cache_queue', 'cache_exchange','cache_exchange');
+
+$channel->queue_declare('delay_queue',false,true,false,false,false);
+$channel->queue_bind('delay_queue', 'delay_exchange','delay_exchange');
 
 
-$channel->queue_declare($queue, false, true, false, false);
-$channel->queue_bind($queue, $exchange);
-
-
-$channel->queue_declare($queue1, false, true, false, false);
-$channel->queue_bind($queue1, $exchange1);
-
-
-$msg = new AMQPMessage('Hello World'. mt_rand(1,30000),array(
-    'expiration' => intval(18000),
+$msg = new AMQPMessage('Hello World'.$argv[1],array(
+    'expiration' => intval($argv[1]),
     'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT
+
 ));
 
-
-$channel->basic_publish($msg,$exchange, $exchange);
+$channel->basic_publish($msg,'cache_exchange','cache_exchange');
 echo date('Y-m-d H:i:s')." [x] Sent 'Hello World!' ".PHP_EOL;
 
 $channel->close();
